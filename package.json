@@ -1,7 +1,7 @@
 {
     "name": "@plurnk/plurnk-mimetypes-text-terraform",
-    "version": "0.1.0",
-    "description": "application/x-hcl mimetype handler for plurnk-service. ANTLR-backed extraction via grammars-v4.",
+    "version": "0.2.0",
+    "description": "text/x-hcl / text/x-terraform mimetype handler for plurnk-service. ANTLR-backed extraction via grammars-v4.",
     "type": "module",
     "license": "MIT",
     "publishConfig": {
@@ -14,7 +14,15 @@
         "kind": "mimetype",
         "handlers": [
             {
-                "name": "application/x-hcl",
+                "name": "text/x-hcl",
+                "glyph": "\ud83c\udfd7\ufe0f",
+                "extensions": [
+                    ".tf",
+                    ".tfvars"
+                ]
+            },
+            {
+                "name": "text/x-terraform",
                 "glyph": "\ud83c\udfd7\ufe0f",
                 "extensions": [
                     ".tf",

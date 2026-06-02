@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import TextTerraform from "./TextTerraform.ts";
 
 const metadata = {
-    mimetype: "application/x-hcl",
+    mimetype: "text/x-hcl",
     glyph: "🏗️",
     extensions: [".tf", ".tfvars"] as const,
 };
@@ -11,7 +11,7 @@ const metadata = {
 describe("TextTerraform — instantiation", () => {
     it("instantiates with metadata", () => {
         const h = new TextTerraform(metadata);
-        assert.equal(h.mimetype, "application/x-hcl");
+        assert.equal(h.mimetype, "text/x-hcl");
         assert.equal(h.glyph, "🏗️");
     });
 });
