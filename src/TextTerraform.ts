@@ -1,88 +1,42 @@
-import { AntlrExtractor, withExtractor } from "@plurnk/plurnk-mimetypes";
-import type { ExtractionVisitor } from "@plurnk/plurnk-mimetypes";
-import { CharStream, CommonTokenStream } from "antlr4ng";
-import { terraformLexer } from "./generated/terraformLexer.ts";
-import { terraformParser } from "./generated/terraformParser.ts";
-import { terraformVisitor } from "./generated/terraformVisitor.ts";
+import { TreeSitterExtractor } from "@plurnk/plurnk-mimetypes";
+import type {
+    HandlerContent,
+    MimeSymbol,
+    TreeSitterNode,
+    TreeSitterParser,
+    TreeSitterTree,
+} from "@plurnk/plurnk-mimetypes";
+import { extract } from "./hcl.ts";
 
-// application/x-hcl handler. ANTLR grammar from grammars-v4/terraform.
+// text/x-hcl + text/x-terraform handler. Tier 2 since v1.0.0 — was ANTLR
+// from 0.1.0 through 0.3.0; promoted to tree-sitter-hcl when the community
+// grammar matured to cleanly parse Terraform + Packer + other HCL dialects.
 //
-// Parser entry rule: file_ → (local | module | output | provider | variable |
-// data | resource | terraform)+ EOF
-export default class TextTerraform extends AntlrExtractor {
-    protected parseTree(content: string): unknown {
-        const lexer = new terraformLexer(CharStream.fromString(content));
-        const tokens = new CommonTokenStream(lexer);
-        const parser = new terraformParser(tokens);
-        parser.removeErrorListeners();
-        return parser.file_();
+// One handler class serves both registered mimetypes (text/x-hcl and
+// text/x-terraform). The extraction logic is identical across them — HCL is
+// HCL — but the two mimetypes coexist so consumers can route by intent
+// (generic HCL config vs. Terraform-specific) when that distinction matters
+// to them.
+export default class TextTerraform extends TreeSitterExtractor {
+    protected async loadParser(): Promise<TreeSitterParser> {
+        const ts = await import("web-tree-sitter" as string) as {
+            Parser: {
+                init(): Promise<void>;
+                new (): { setLanguage(lang: unknown): void; parse(content: string): unknown };
+            };
+            Language: {
+                load(wasmPath: string): Promise<unknown>;
+            };
+        };
+        await ts.Parser.init();
+        const wasmUrl = new URL("../hcl.wasm", import.meta.url);
+        const lang = await ts.Language.load(wasmUrl.pathname);
+        const parser = new ts.Parser();
+        parser.setLanguage(lang);
+        return parser as unknown as TreeSitterParser;
     }
 
-    protected createVisitor(): ExtractionVisitor {
-        return new TextTerraformVisitor() as unknown as ExtractionVisitor;
+    protected extractFromTree(tree: TreeSitterTree, _content: HandlerContent): MimeSymbol[] {
+        return extract(tree.rootNode);
     }
-}
-
-// SPEC §3 mapping for Terraform HCL:
-//   resource TYPE NAME { ... }   → class (rendered as `TYPE.NAME` —
-//                                  Terraform's canonical reference form)
-//   data TYPE NAME { ... }       → class (rendered as `data.TYPE.NAME`)
-//   module NAME { ... }          → module
-//   provider TYPE { ... }        → module
-//   variable NAME { ... }        → variable
-//   output NAME { ... }          → constant (outputs are read-only exports)
-//   locals { ... }               → not surfaced as a single symbol (the
-//                                  contained bindings would each need
-//                                  argument extraction; deferred)
-//   terraform { ... }            → not surfaced
-class TextTerraformVisitor extends withExtractor(terraformVisitor) {
-    visitResource = (ctx: any): null => {
-        if (this.inBody) return null;
-        const type = unquoteString(ctx.resourcetype?.()?.getText?.());
-        const name = unquoteString(ctx.name?.()?.getText?.());
-        if (type && name) this.addSymbol("class", `${type}.${name}`, ctx);
-        return null;
-    };
-
-    visitData = (ctx: any): null => {
-        if (this.inBody) return null;
-        const type = unquoteString(ctx.resourcetype?.()?.getText?.());
-        const name = unquoteString(ctx.name?.()?.getText?.());
-        if (type && name) this.addSymbol("class", `data.${type}.${name}`, ctx);
-        return null;
-    };
-
-    visitModule = (ctx: any): null => {
-        if (this.inBody) return null;
-        const name = unquoteString(ctx.name?.()?.getText?.());
-        if (name) this.addSymbol("module", name, ctx);
-        return null;
-    };
-
-    visitProvider = (ctx: any): null => {
-        if (this.inBody) return null;
-        const type = unquoteString(ctx.resourcetype?.()?.getText?.());
-        if (type) this.addSymbol("module", type, ctx);
-        return null;
-    };
-
-    visitVariable = (ctx: any): null => {
-        if (this.inBody) return null;
-        const name = unquoteString(ctx.name?.()?.getText?.());
-        if (name) this.addSymbol("variable", name, ctx);
-        return null;
-    };
-
-    visitOutput = (ctx: any): null => {
-        if (this.inBody) return null;
-        const name = unquoteString(ctx.name?.()?.getText?.());
-        if (name) this.addSymbol("constant", name, ctx);
-        return null;
-    };
-}
-
-function unquoteString(s: string | undefined | null): string | null {
-    if (!s) return null;
-    if (s.length >= 2 && s.startsWith('"') && s.endsWith('"')) return s.slice(1, -1);
-    return s;
 }

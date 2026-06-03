@@ -1,7 +1,7 @@
 {
     "name": "@plurnk/plurnk-mimetypes-text-terraform",
-    "version": "0.3.0",
-    "description": "text/x-hcl / text/x-terraform mimetype handler for plurnk-service. ANTLR-backed extraction via grammars-v4.",
+    "version": "1.0.0",
+    "description": "text/x-hcl / text/x-terraform mimetype handler for plurnk-service. Tier 2: tree-sitter-hcl grammar built to WASM and shipped pre-built. Promoted from ANTLR in 1.0.0.",
     "type": "module",
     "license": "MIT",
     "publishConfig": {
@@ -15,15 +15,16 @@
         "handlers": [
             {
                 "name": "text/x-hcl",
-                "glyph": "\ud83c\udfd7\ufe0f",
+                "glyph": "🏗️",
                 "extensions": [
                     ".tf",
-                    ".tfvars"
+                    ".tfvars",
+                    ".hcl"
                 ]
             },
             {
                 "name": "text/x-terraform",
-                "glyph": "\ud83c\udfd7\ufe0f",
+                "glyph": "🏗️",
                 "extensions": [
                     ".tf",
                     ".tfvars"
@@ -36,29 +37,32 @@
             "types": "./dist/index.d.ts",
             "default": "./dist/index.js"
         },
-        "./package.json": "./package.json"
+        "./package.json": "./package.json",
+        "./hcl.wasm": "./hcl.wasm"
     },
     "files": [
         "dist/**/*",
-        "grammar/**/*",
+        "hcl.wasm",
+        ".hcl-grammar-pin",
         "README.md"
     ],
     "scripts": {
+        "build:wasm": "node scripts/build-wasm.mjs",
+        "build:dist": "tsc -p tsconfig.build.json",
+        "build": "npm run build:dist",
         "test:lint": "tsc --noEmit",
         "test:unit": "node --test src/**/*.test.ts",
         "test": "npm run test:lint && npm run test:unit",
-        "build:grammar": "plurnk-mimetypes-compile",
-        "build:dist": "tsc -p tsconfig.build.json",
-        "build": "npm run build:grammar && npm run build:dist",
-        "prepare": "npm run build"
+        "prepare": "npm run build",
+        "verify:wasm": "node scripts/verify-wasm.mjs"
     },
     "dependencies": {
         "@plurnk/plurnk-mimetypes": "0.10.0",
-        "antlr4ng": "^3.0.0"
+        "web-tree-sitter": "^0.25.10"
     },
     "devDependencies": {
-        "@types/node": "^25.8.0",
-        "antlr-ng": "^1.0.10",
+        "@types/node": "^25.9.1",
+        "tree-sitter-cli": "^0.26.9",
         "typescript": "^6.0.3"
     }
 }
