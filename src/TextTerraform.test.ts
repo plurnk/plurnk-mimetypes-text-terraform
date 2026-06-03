@@ -110,18 +110,20 @@ describe("TextTerraform — extract", () => {
 });
 
 describe("TextTerraform — framework integration", () => {
-    it("renders extracted hierarchy via format()", () => {
+    it("renders extracted hierarchy via format()", async () => {
         const h = new TextTerraform(metadata);
         const src = "resource \"aws_s3_bucket\" \"logs\" { bucket = \"logs\" }";
-        const out = h.symbolsRaw(src);
+        const out = await h.symbolsRaw(src);
         assert.ok(out.includes("aws_s3_bucket.logs"));
     });
 
-    it("inherits jsonpath query against the symbol outline", async () => {
+    it("jsonpath dispatches against the deep-json ANTLR parse tree (issue #10)", async () => {
+        // Every ANTLR deep tree has a root with a `type` field — verify
+        // jsonpath reaches it via the deep-channel dispatch.
         const h = new TextTerraform(metadata);
-        const src = "variable \"region\" { default = \"us-east-1\" }";
-        const r = await h.query(src, "jsonpath", "$.region");
-        assert.equal(r.length, 1);
+        const roots = await h.query("class Probe {}", "jsonpath", "$.type");
+        assert.equal(roots.length, 1);
+        assert.equal(typeof roots[0].matched, "string");
     });
 });
 
