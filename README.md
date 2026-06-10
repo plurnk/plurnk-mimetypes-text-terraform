@@ -1,6 +1,6 @@
 # @plurnk/plurnk-mimetypes-text-terraform
 
-application/x-hcl mimetype handler for plurnk-service. ANTLR-backed extraction using grammars-v4's `terraform` grammar.
+application/x-hcl mimetype handler for plurnk-service. Tree-sitter-backed extraction using a pinned tree-sitter-hcl grammar built to WASM (Tier 2; promoted from ANTLR at v1.0.0).
 
 ## Symbols emitted
 
