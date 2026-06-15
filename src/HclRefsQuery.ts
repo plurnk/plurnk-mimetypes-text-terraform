@@ -1,4 +1,4 @@
-import type { RefsQuery, RefsQueryCapture, TreeSitterNode } from "@plurnk/plurnk-mimetypes";
+import type { RefsCaptureNode, RefsQuery, RefsQueryCapture, TreeSitterNode } from "@plurnk/plurnk-mimetypes";
 
 // Adapts a compiled web-tree-sitter Query to the framework's RefsQuery
 // surface. HCL needs match-level composition the engine's flat captures()
@@ -54,14 +54,14 @@ export default class HclRefsQuery implements RefsQuery {
     }
 }
 
-// Synthetic span node covering the composed qualified name. The refs engine
-// reads only text/startPosition/endPosition from a capture's node (documented
-// contract in the framework's refsEngine.ts), so the partial cast is safe.
+// Span node covering the composed qualified name. RefsCaptureNode (issue #26)
+// is exactly the {text,startPosition,endPosition} surface the engine reads, so
+// this is an honest construction — no cast through TreeSitterNode.
 function span(text: string, start: TreeSitterNode, end: TreeSitterNode): RefsQueryCapture {
-    const node = {
+    const node: RefsCaptureNode = {
         text,
         startPosition: start.startPosition,
         endPosition: end.endPosition,
-    } as TreeSitterNode;
+    };
     return { name: "ref.use", node };
 }

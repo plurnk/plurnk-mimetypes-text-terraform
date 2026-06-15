@@ -1,9 +1,9 @@
-import { TreeSitterExtractor, collectReferences } from "@plurnk/plurnk-mimetypes";
+import { TreeSitterExtractor } from "@plurnk/plurnk-mimetypes";
 import type {
     HandlerContent,
     MimeRef,
     MimeSymbol,
-    TreeSitterNode,
+    QueryConstructor,
     TreeSitterParser,
     TreeSitterTree,
 } from "@plurnk/plurnk-mimetypes";
@@ -22,13 +22,6 @@ import { refsQuery } from "./queries/hcl.ts";
 // (generic HCL config vs. Terraform-specific) when that distinction matters
 // to them.
 export default class TextTerraform extends TreeSitterExtractor {
-    // Retained by loadParser for the references channel — Query compilation
-    // needs the Language object and the Query constructor, not the parser
-    // (same pattern as the framework's TreeSitterLanguageHandler).
-    #language: unknown = null;
-    #QueryCtor: (new (language: unknown, source: string) => HclRawQuery) | null = null;
-    #refsQuery: HclRefsQuery | null = null;
-
     protected async loadParser(): Promise<TreeSitterParser> {
         const ts = await import("web-tree-sitter" as string) as {
             Parser: {
@@ -38,13 +31,13 @@ export default class TextTerraform extends TreeSitterExtractor {
             Language: {
                 load(wasmPath: string): Promise<unknown>;
             };
-            Query: new (language: unknown, source: string) => HclRawQuery;
+            Query: QueryConstructor;
         };
         await ts.Parser.init();
         const wasmUrl = new URL("../hcl.wasm", import.meta.url);
         const lang = await ts.Language.load(wasmUrl.pathname);
-        this.#language = lang;
-        this.#QueryCtor = ts.Query;
+        // Hand the base the Language + Query ctor for collectRefs() (#26).
+        this.setQueryContext(lang, ts.Query);
         const parser = new ts.Parser();
         parser.setLanguage(lang);
         return parser as unknown as TreeSitterParser;
@@ -54,46 +47,16 @@ export default class TextTerraform extends TreeSitterExtractor {
         return extract(tree.rootNode);
     }
 
-    // References channel (framework SPEC §16). Executes the HCL refs query
-    // via the framework's collectReferences engine; containers resolve
-    // against the same defs extract() emits. Error policy mirrors the
-    // framework's TreeSitterLanguageHandler: parse/query failures route to
-    // an empty channel.
-    override async references(content: HandlerContent): Promise<MimeRef[]> {
-        if (typeof content !== "string") return [];
-        let parser: TreeSitterParser;
-        try {
-            parser = await this.getParser();
-        } catch {
-            return [];
-        }
-        const query = this.#getRefsQuery();
-        let tree: TreeSitterTree | null;
-        try {
-            tree = parser.parse(content);
-            if (!tree) return [];
-        } catch {
-            return [];
-        }
-        try {
-            return collectReferences(query, tree, extract(tree.rootNode));
-        } catch {
-            return [];
-        } finally {
-            tree.delete?.();
-        }
-    }
-
-    // Compiled-query cache: the query source is constant, so compile once
-    // per handler lifetime. A primed parser guarantees loadParser retained
-    // the Language + Query constructor.
-    #getRefsQuery(): HclRefsQuery {
-        if (this.#refsQuery === null) {
-            if (this.#language === null || this.#QueryCtor === null) {
-                throw new Error("internal: references() before loadParser primed the language");
-            }
-            this.#refsQuery = new HclRefsQuery(new this.#QueryCtor(this.#language, refsQuery));
-        }
-        return this.#refsQuery;
+    // References channel (framework SPEC §16). The base collectRefs() helper
+    // owns the parse → compile → run → cleanup dance and error policy; HCL's
+    // `wrap` adapts the raw match-based query into match-level TYPE.NAME
+    // composition the flat engine can't express (#26).
+    override references(content: HandlerContent): Promise<MimeRef[]> {
+        return this.collectRefs(
+            content,
+            refsQuery,
+            (root) => extract(root),
+            (raw) => new HclRefsQuery(raw as HclRawQuery),
+        );
     }
 }
