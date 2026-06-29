@@ -54,7 +54,9 @@
         "test:unit": "node --test src/**/*.test.ts",
         "test": "npm run test:lint && npm run test:unit",
         "prepare": "npm run build",
-        "verify:wasm": "node scripts/verify-wasm.mjs"
+        "verify:wasm": "node scripts/verify-wasm.mjs",
+        "deps:fresh": "npm outdated",
+        "prepublishOnly": "npm run deps:fresh && npm audit --audit-level=moderate && npm test"
     },
     "dependencies": {
         "web-tree-sitter": "^0.26.9"
