@@ -53,7 +53,7 @@
         "test:lint": "tsc --noEmit",
         "test:unit": "node --test src/**/*.test.ts",
         "test": "npm run test:lint && npm run test:unit",
-        "prepare": "npm run build",
+        "prepare": "npm run build && (git config core.hooksPath .githooks || true)",
         "verify:wasm": "node scripts/verify-wasm.mjs",
         "deps:fresh": "npm outdated",
         "prepublishOnly": "npm run deps:fresh && npm audit --audit-level=moderate && npm test"
