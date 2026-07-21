@@ -1,6 +1,6 @@
 {
     "name": "@plurnk/plurnk-mimetypes-text-terraform",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "description": "text/x-hcl / text/x-terraform mimetype handler for plurnk-service. Tier 2: tree-sitter-hcl grammar built to WASM and shipped pre-built. Promoted from ANTLR in 1.0.0.",
     "type": "module",
     "license": "MIT",
@@ -62,12 +62,12 @@
         "web-tree-sitter": "^0.26.9"
     },
     "devDependencies": {
-        "@plurnk/plurnk-mimetypes": "1.1.0",
+        "@plurnk/plurnk-mimetypes": "1.1.1",
         "@types/node": "^26.0.0",
         "tree-sitter-cli": "^0.26.9",
         "typescript": "^7.0.2"
     },
     "peerDependencies": {
-        "@plurnk/plurnk-mimetypes": "1.1.0"
+        "@plurnk/plurnk-mimetypes": "1.1.1"
     }
 }
