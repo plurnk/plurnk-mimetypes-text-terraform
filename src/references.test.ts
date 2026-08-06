@@ -179,6 +179,28 @@ describe("conformance: text/x-terraform refs (SPEC §16 invariants, inline)", ()
         assert.equal(ref.container, "ip");
     });
 
+    it("composed resource refs use native indexes across preceding Unicode", async () => {
+        const h = new TextTerraform(metadata);
+        const prefix = 'output "😀e\u0301" { value = ';
+        const references = await h.references(`${prefix}aws_instance.web.public_ip }\n`);
+        const ref = references.find((candidate) => candidate.name === "aws_instance.web");
+        const expectedColumn = Array.from(prefix).length + 1;
+        assert.ok(ref);
+        assert.deepEqual({
+            line: ref.line,
+            column: ref.column,
+            endLine: ref.endLine,
+            endColumn: ref.endColumn,
+            container: ref.container,
+        }, {
+            line: 1,
+            column: expectedColumn,
+            endLine: 1,
+            endColumn: expectedColumn + Array.from("aws_instance.web").length,
+            container: "😀e\u0301",
+        });
+    });
+
     it("non-string and malformed content route to an empty channel", async () => {
         const h = new TextTerraform(metadata);
         assert.deepEqual(await h.references(new Uint8Array([1, 2, 3])), []);

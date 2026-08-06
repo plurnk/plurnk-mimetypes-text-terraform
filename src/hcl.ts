@@ -1,4 +1,5 @@
-import type { MimeSymbol, SymbolKind, TreeSitterNode } from "@plurnk/plurnk-mimetypes";
+import { treeSitterSpan } from "@plurnk/plurnk-mimetypes";
+import type { TreeSitterNode, TreeSitterSymbolProjection } from "@plurnk/plurnk-mimetypes";
 
 // HCL SPEC §3 mapping for tree-sitter-hcl.
 //
@@ -18,8 +19,8 @@ import type { MimeSymbol, SymbolKind, TreeSitterNode } from "@plurnk/plurnk-mime
 //
 // Same mapping for text/x-hcl and text/x-terraform — the handler class
 // registers both mimetypes, but extraction logic is HCL-uniform.
-export function extract(root: TreeSitterNode): MimeSymbol[] {
-    const out: MimeSymbol[] = [];
+export function extract(root: TreeSitterNode): TreeSitterSymbolProjection[] {
+    const out: TreeSitterSymbolProjection[] = [];
     const body = findChildOfType(root, "body");
     if (!body) return out;
     for (let i = 0; i < body.namedChildCount; i += 1) {
@@ -30,7 +31,7 @@ export function extract(root: TreeSitterNode): MimeSymbol[] {
     return out;
 }
 
-function handleBlock(block: TreeSitterNode, out: MimeSymbol[]): void {
+function handleBlock(block: TreeSitterNode, out: TreeSitterSymbolProjection[]): void {
     // First named child is the block's leading identifier (resource, data,
     // module, etc.). Subsequent string_lit children are the labels.
     const head = block.namedChild(0);
@@ -47,47 +48,46 @@ function handleBlock(block: TreeSitterNode, out: MimeSymbol[]): void {
         }
     }
 
-    const line = block.startPosition.row + 1;
-    const endLine = block.endPosition.row + 1;
+    const span = treeSitterSpan(block);
 
     switch (blockType) {
         case "resource":
             if (labels.length >= 2) {
-                out.push({ name: `${labels[0]}.${labels[1]}`, kind: "class", line, endLine });
+                out.push({ name: `${labels[0]}.${labels[1]}`, kind: "class", span });
             }
             return;
         case "data":
             if (labels.length >= 2) {
-                out.push({ name: `data.${labels[0]}.${labels[1]}`, kind: "class", line, endLine });
+                out.push({ name: `data.${labels[0]}.${labels[1]}`, kind: "class", span });
             }
             return;
         case "source":
             if (labels.length >= 2) {
-                out.push({ name: `${labels[0]}.${labels[1]}`, kind: "class", line, endLine });
+                out.push({ name: `${labels[0]}.${labels[1]}`, kind: "class", span });
             }
             return;
         case "module":
             if (labels.length >= 1) {
-                out.push({ name: labels[0], kind: "module", line, endLine });
+                out.push({ name: labels[0], kind: "module", span });
             }
             return;
         case "provider":
             if (labels.length >= 1) {
-                out.push({ name: labels[0], kind: "module", line, endLine });
+                out.push({ name: labels[0], kind: "module", span });
             }
             return;
         case "variable":
             if (labels.length >= 1) {
-                out.push({ name: labels[0], kind: "variable", line, endLine });
+                out.push({ name: labels[0], kind: "variable", span });
             }
             return;
         case "output":
             if (labels.length >= 1) {
-                out.push({ name: labels[0], kind: "constant", line, endLine });
+                out.push({ name: labels[0], kind: "constant", span });
             }
             return;
         case "build":
-            out.push({ name: "build", kind: "module", line, endLine });
+            out.push({ name: "build", kind: "module", span });
             return;
         default:
             // packer / terraform / locals / etc. — config-level blocks

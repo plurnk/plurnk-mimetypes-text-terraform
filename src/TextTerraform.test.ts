@@ -145,3 +145,30 @@ describe("TextTerraform — real-world smoke (AWS VPC stack)", () => {
         assert.ok(byNameKind.has("vpc_id:constant"));
     });
 });
+
+describe("TextTerraform — parser coordinates", () => {
+    it("materializes native spans across LF, CRLF, and CR-only records with Unicode", async () => {
+        const firstLine = "variable \"😀e\u0301\" {}";
+        for (const separator of ["\n", "\r\n", "\r"]) {
+            const h = new TextTerraform(metadata);
+            const symbols = await h.extractRaw(`${firstLine}${separator}output "x" {}`);
+            const first = symbols.find((symbol) => symbol.name === "😀e\u0301");
+            const second = symbols.find((symbol) => symbol.name === "x");
+            assert.deepEqual(first && {
+                line: first.line,
+                column: first.column,
+                endLine: first.endLine,
+                endColumn: first.endColumn,
+            }, {
+                line: 1,
+                column: 1,
+                endLine: 1,
+                endColumn: Array.from(firstLine).length + 1,
+            });
+            assert.deepEqual(second && {
+                line: second.line,
+                column: second.column,
+            }, { line: 2, column: 1 });
+        }
+    });
+});

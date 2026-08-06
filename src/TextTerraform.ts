@@ -1,4 +1,4 @@
-import { TreeSitterExtractor } from "@plurnk/plurnk-mimetypes";
+import { materializeTreeSitterSymbols, TreeSitterExtractor } from "@plurnk/plurnk-mimetypes";
 import type {
     HandlerContent,
     MimeRef,
@@ -43,8 +43,8 @@ export default class TextTerraform extends TreeSitterExtractor {
         return parser as unknown as TreeSitterParser;
     }
 
-    protected extractFromTree(tree: TreeSitterTree, _content: HandlerContent): MimeSymbol[] {
-        return extract(tree.rootNode);
+    protected extractFromTree(tree: TreeSitterTree, content: string): MimeSymbol[] {
+        return materializeTreeSitterSymbols(content, extract(tree.rootNode));
     }
 
     // References channel (framework SPEC §16). The base collectRefs() helper
@@ -55,7 +55,7 @@ export default class TextTerraform extends TreeSitterExtractor {
         return this.collectRefs(
             content,
             refsQuery,
-            (root) => extract(root),
+            (root, source) => materializeTreeSitterSymbols(source, extract(root)),
             (raw) => new HclRefsQuery(raw as HclRawQuery),
         );
     }

@@ -58,8 +58,13 @@ export default class HclRefsQuery implements RefsQuery {
 // is exactly the {text,startPosition,endPosition} surface the engine reads, so
 // this is an honest construction — no cast through TreeSitterNode.
 function span(text: string, start: TreeSitterNode, end: TreeSitterNode): RefsQueryCapture {
+    if (start.startIndex === undefined || end.endIndex === undefined) {
+        throw new Error("HCL reference capture lacks native source offsets");
+    }
     const node: RefsCaptureNode = {
         text,
+        startIndex: start.startIndex,
+        endIndex: end.endIndex,
         startPosition: start.startPosition,
         endPosition: end.endPosition,
     };
