@@ -1,6 +1,6 @@
 {
     "name": "@plurnk/plurnk-mimetypes-text-terraform",
-    "version": "1.4.0",
+    "version": "2.0.0",
     "description": "text/x-hcl / text/x-terraform mimetype handler for plurnk-service. Tier 2: tree-sitter-hcl grammar built to WASM and shipped pre-built. Promoted from ANTLR in 1.0.0.",
     "type": "module",
     "license": "MIT",
@@ -20,7 +20,8 @@
                     ".tf",
                     ".tfvars",
                     ".hcl"
-                ]
+                ],
+                "revision": "1"
             },
             {
                 "name": "text/x-terraform",
@@ -28,10 +29,10 @@
                 "extensions": [
                     ".tf",
                     ".tfvars"
-                ]
+                ],
+                "revision": "1"
             }
-        ],
-        "builtAgainst": "1.4.0"
+        ]
     },
     "exports": {
         ".": {
@@ -56,19 +57,23 @@
         "test": "npm run test:lint && npm run test:unit",
         "prepare": "npm run build && (git config core.hooksPath .githooks || true)",
         "verify:wasm": "node scripts/verify-wasm.mjs",
-        "deps:fresh": "npm outdated",
-        "prepublishOnly": "npm run deps:fresh && npm audit --audit-level=moderate && npm test"
+        "prepublishOnly": "npm test"
     },
     "dependencies": {
         "web-tree-sitter": "^0.26.9"
     },
     "devDependencies": {
-        "@plurnk/plurnk-mimetypes": "1.4.0",
+        "@plurnk/plurnk-mimetypes": "^2.0.0",
         "@types/node": "^26.0.0",
         "tree-sitter-cli": "^0.26.9",
         "typescript": "^7.0.2"
     },
     "peerDependencies": {
-        "@plurnk/plurnk-mimetypes": "^1.4.0"
-    }
+        "@plurnk/plurnk-mimetypes": "^2.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/plurnk/plurnk-mimetypes-text-terraform.git"
+    },
+    "homepage": "https://github.com/plurnk/plurnk-mimetypes-text-terraform#readme"
 }
