@@ -26,11 +26,10 @@ if (!/^[0-9a-f]{7,40}$/i.test(pin)) {
 const work = await mkdtemp(path.join(tmpdir(), "hcl-wasm-build-"));
 console.log(`build root: ${work}`);
 
-await run("git", ["clone", "--no-checkout", "https://github.com/MichaHoffmann/tree-sitter-hcl.git", "src"], { cwd: work });
-await run("git", ["checkout", pin], { cwd: path.join(work, "src") });
-await run("npm", ["install", "--no-save", "tree-sitter-cli@^0.26.0"], { cwd: work });
-
-const cli = path.join(work, "node_modules", ".bin", "tree-sitter");
+await run("git", ["init", "--quiet", "src"], { cwd: work });
+await run("git", ["fetch", "--quiet", "--depth=1", "https://github.com/MichaHoffmann/tree-sitter-hcl.git", pin], { cwd: path.join(work, "src") });
+await run("git", ["checkout", "--quiet", "--detach", "FETCH_HEAD"], { cwd: path.join(work, "src") });
+const cli = path.join(repoRoot, "node_modules", ".bin", "tree-sitter");
 await run(cli, ["generate"], { cwd: path.join(work, "src") });
 await run(cli, ["build", "--wasm"], { cwd: path.join(work, "src") });
 
