@@ -64,7 +64,7 @@
     },
     "devDependencies": {
         "@plurnk/plurnk-mimetypes": "^3.0.6",
-        "@types/node": "^26.6.5",
+        "@types/node": "^26.6.6",
         "tree-sitter-cli": "0.27.1",
         "typescript": "^7.0.2"
     },
