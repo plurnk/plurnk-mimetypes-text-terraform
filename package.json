@@ -63,7 +63,7 @@
         "web-tree-sitter": "^0.27.2"
     },
     "devDependencies": {
-        "@plurnk/plurnk-mimetypes": "^3.0.7",
+        "@plurnk/plurnk-mimetypes": "^3.0.8",
         "@types/node": "^26.6.6",
         "tree-sitter-cli": "0.27.2",
         "typescript": "^7.0.2"
